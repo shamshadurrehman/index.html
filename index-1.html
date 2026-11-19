@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pharmacy Manager</title>
+<style>
+:root{--bg:#f4f6f3;--card:#fff;--tx:#1b2420;--mu:#66726b;--ac:#0f766e;--on:#fff;--bd:#dce3de;--rd:#c0392b;--or:#b7791f;--gr:#2f855a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111815;--card:#1a2420;--tx:#e8eeea;--mu:#9aa8a0;--ac:#2dd4bf;--on:#06201c;--bd:#2b3733;--rd:#f08a7e;--or:#e9b949;--gr:#6fcf97}}
+:root[data-theme="dark"]{--bg:#111815;--card:#1a2420;--tx:#e8eeea;--mu:#9aa8a0;--ac:#2dd4bf;--on:#06201c;--bd:#2b3733;--rd:#f08a7e;--or:#e9b949;--gr:#6fcf97}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:640px;margin:0 auto;padding:0 12px 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+h1{font-size:19px;margin:14px 0 8px}
+h2{font-size:15px;margin:16px 0 8px}
+nav{display:flex;gap:6px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:6px 0;z-index:5}
+nav button{flex:1;padding:9px 2px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:9px;font-size:13px;position:relative}
+nav button.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.badge{background:var(--rd);color:#fff;border-radius:9px;font-size:11px;padding:0 6px;margin-left:3px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:8px 0}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{display:block;font-size:12px;color:var(--mu);margin-bottom:2px}
+input,select,textarea{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+button.p,button.s,button.d{padding:9px 14px;border-radius:8px;border:1px solid var(--ac);font:inherit;font-weight:600}
+button.p{background:var(--ac);color:var(--on)}
+button.s{background:transparent;color:var(--ac)}
+button.d{background:transparent;color:var(--rd);border-color:var(--rd)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mu{color:var(--mu);font-size:13px}
+.tag{font-size:11px;padding:2px 7px;border-radius:8px;border:1px solid currentColor;white-space:nowrap}
+.expired,.low{color:var(--rd)}.soon{color:var(--or)}.ok{color:var(--gr)}
+.act{display:flex;gap:6px;margin-top:8px}
+.act button{padding:6px 12px;font-size:13px}
+.tot{font-size:18px;font-weight:700}
+#receipt{display:none}
+@media print{body>*:not(#receipt){display:none!important}#receipt{display:block!important}body::before{display:none}}
+</style></head><body>
+<h1 id="ttl">Pharmacy Manager</h1>
+<nav id="nav"></nav>
+
+<section id="t-stock">
+<div class="card"><b id="fh">Nayi dawai add karo</b>
+<div class="g" style="margin-top:8px">
+<div style="grid-column:1/3"><label>Dawai ka naam</label><input id="f-name"></div>
+<div><label>Batch no.</label><input id="f-batch"></div>
+<div><label>Quantity</label><input id="f-qty" type="number" min="0"></div>
+<div><label>Mfg date</label><input id="f-mfg" type="date"></div>
+<div><label>Expiry date</label><input id="f-exp" type="date"></div>
+<div><label>Price (per unit)</label><input id="f-price" type="number" min="0" step="0.01"></div>
+</div>
+<div class="act"><button class="p" id="f-save">Save</button><button class="s" id="f-cancel" style="display:none">Cancel</button></div>
+<div id="f-err" class="expired mu"></div></div>
+<input id="q" placeholder="Search naam ya batch...">
+<div id="list"></div>
+</section>
+
+<section id="t-bill" style="display:none">
+<div class="card"><b>Naya bill</b>
+<div class="g" style="margin-top:8px">
+<div style="grid-column:1/3"><label>Dawai</label><select id="b-med"></select></div>
+<div><label>Qty</label><input id="b-qty" type="number" min="1" value="1"></div>
+<div style="display:flex;align-items:flex-end"><button class="p" id="b-add" style="width:100%">Add</button></div>
+</div>
+<div id="cart"></div>
+<div class="g" style="margin-top:8px">
+<div style="grid-column:1/3"><label>Customer ka naam (optional)</label><input id="b-cust"></div>
+<div><label>Discount %</label><input id="b-disc" type="number" min="0" value="0"></div>
+<div><label>GST %</label><input id="b-gst" type="number" min="0" value="0"></div>
+</div>
+<div class="row" style="margin-top:10px"><span class="tot" id="b-tot">0.00</span><button class="p" id="b-gen">Bill banao</button></div>
+<div id="b-err" class="expired mu"></div></div>
+<div id="rcpt-view"></div>
+<h2>Aaj ki sale: <span id="sale">0</span></h2>
+<div id="hist"></div>
+</section>
+
+<section id="t-alert" style="display:none"><div id="alerts"></div></section>
+
+<section id="t-set" style="display:none">
+<div class="card"><label>Dukaan ka naam (bill par)</label><input id="s-shop"></div>
+<div class="card"><b>Backup</b><p class="mu">Export dabao, text copy karke kahin save kar lo (WhatsApp/Notes). Naye phone par Import se wapas lao.</p>
+<textarea id="bk" rows="5"></textarea>
+<div class="act"><button class="s" id="ex">Export</button><button class="p" id="im">Import</button></div>
+<div id="bk-msg" class="mu"></div></div>
+</section>
+
+<div id="receipt"></div>
+<script>
+let S={meds:[],bills:[],shop:"Medical Store"};
+try{const r=localStorage.getItem("pharm");if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+const save=()=>{try{localStorage.setItem("pharm",JSON.stringify(S))}catch(e){}};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const days=d=>Math.round((new Date(d)-new Date(today()))/864e5);
+const status=m=>{const d=days(m.exp);return d<0?"expired":d<=90?"soon":"ok"};
+const money=n=>(Math.round(n*100)/100).toFixed(2);
+const LOW=10;
+let tab="stock",edit=null,cart=[],armed=null;
+
+function nav(){
+  const al=S.meds.filter(m=>status(m)!=="ok"||m.qty<=LOW).length;
+  const T=[["stock","Stock"],["bill","Bill"],["alert","Alerts"+(al?'<span class="badge">'+al+"</span>":"")],["set","Settings"]];
+  $("nav").innerHTML=T.map(t=>'<button class="'+(tab===t[0]?"on":"")+'" data-t="'+t[0]+'">'+t[1]+"</button>").join("");
+  $("nav").querySelectorAll("button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
+  ["stock","bill","alert","set"].forEach(k=>$("t-"+k).style.display=tab===k?"":"none");
+}
+function render(){nav();$("ttl").textContent=S.shop||"Pharmacy Manager";
+  if(tab==="stock")stock();if(tab==="bill")bill();if(tab==="alert")alerts();if(tab==="set")$("s-shop").value=S.shop||""}
+
+function stock(){
+  const q=$("q").value.trim().toLowerCase();
+  const L=S.meds.filter(m=>!q||(m.name+" "+m.batch).toLowerCase().includes(q)).sort((a,b)=>a.exp.localeCompare(b.exp));
+  $("list").innerHTML=L.length?L.map(m=>{const s=status(m),d=days(m.exp);
+    const lab=s==="expired"?"Expired":s==="soon"?d+" din baaki":"OK";
+    return '<div class="card"><div class="row"><b>'+esc(m.name)+'</b><span class="tag '+s+'">'+lab+'</span></div>'
+    +'<div class="mu">Batch: '+esc(m.batch)+" · Mfg: "+esc(m.mfg||"-")+" · Exp: "+esc(m.exp)+"</div>"
+    +'<div class="row" style="margin-top:4px"><span class="'+(m.qty<=LOW?"low":"")+'"><b>Stock: '+m.qty+'</b></span><span>'+money(m.price)+' / unit</span></div>'
+    +'<div class="act"><button class="s" data-e="'+m.id+'">Edit</button><button class="d" data-x="'+m.id+'">'+(armed===m.id?"Pakka hatao?":"Hatao")+"</button></div></div>"}).join(""):'<p class="mu">Koi dawai nahi mili. Upar se add karo.</p>';
+  $("list").querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{const m=S.meds.find(x=>x.id===b.dataset.e);edit=m.id;
+    $("f-name").value=m.name;$("f-batch").value=m.batch;$("f-qty").value=m.qty;$("f-mfg").value=m.mfg;$("f-exp").value=m.exp;$("f-price").value=m.price;
+    $("fh").textContent="Edit: "+m.name;$("f-cancel").style.display="";window.scrollTo(0,0)});
+  $("list").querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{const id=b.dataset.x;
+    if(armed===id){S.meds=S.meds.filter(x=>x.id!==id);armed=null;save();render()}else{armed=id;stock()}});
+}
+function clearForm(){edit=null;["name","batch","qty","mfg","exp","price"].forEach(k=>$("f-"+k).value="");$("fh").textContent="Nayi dawai add karo";$("f-cancel").style.display="none";$("f-err").textContent=""}
+$("f-cancel").onclick=clearForm;
+$("f-save").onclick=()=>{
+  const m={name:$("f-name").value.trim(),batch:$("f-batch").value.trim(),qty:parseInt($("f-qty").value,10),mfg:$("f-mfg").value,exp:$("f-exp").value,price:parseFloat($("f-price").value)};
+  if(!m.name||!m.batch||!m.exp||isNaN(m.qty)||isNaN(m.price)){$("f-err").textContent="Naam, batch, expiry, quantity aur price zaroori hain.";return}
+  if(edit){Object.assign(S.meds.find(x=>x.id===edit),m)}else{m.id=uid();S.meds.push(m)}
+  save();clearForm();render()};
+$("q").oninput=stock;
+
+function totals(){
+  const sub=cart.reduce((a,c)=>a+c.qty*c.price,0),d=parseFloat($("b-disc").value)||0,g=parseFloat($("b-gst").value)||0;
+  const after=sub*(1-d/100);return{sub,after,gst:after*g/100,total:after*(1+g/100),d,g}}
+function bill(){
+  const avail=S.meds.filter(m=>m.qty>0&&status(m)!=="expired");
+  $("b-med").innerHTML=avail.length?avail.map(m=>'<option value="'+m.id+'">'+esc(m.name)+" | "+esc(m.batch)+" | stock "+m.qty+" | "+money(m.price)+"</option>").join(""):"<option value=''>Stock khaali hai</option>";
+  $("cart").innerHTML=cart.map((c,i)=>'<div class="row mu" style="padding:6px 0;border-top:1px solid var(--bd)"><span>'+esc(c.name)+" x "+c.qty+'</span><span>'+money(c.qty*c.price)+' <button class="d" data-r="'+i+'" style="padding:2px 8px">x</button></span></div>').join("");
+  $("cart").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{cart.splice(+b.dataset.r,1);bill()});
+  $("b-tot").textContent="Total: "+money(totals().total);
+  const t=S.bills.filter(b=>b.date.slice(0,10)===today());$("sale").textContent=money(t.reduce((a,b)=>a+b.total,0));
+  $("hist").innerHTML=S.bills.slice(-10).reverse().map(b=>'<div class="card row" data-b="'+b.id+'"><span>'+esc(b.cust||"Walk-in")+'<br><span class="mu">'+b.date.slice(0,16).replace("T"," ")+'</span></span><b>'+money(b.total)+"</b></div>").join("");
+  $("hist").querySelectorAll("[data-b]").forEach(e=>e.onclick=()=>showReceipt(S.bills.find(b=>b.id===e.dataset.b)));
+}
+["b-disc","b-gst"].forEach(i=>$(i).oninput=()=>$("b-tot").textContent="Total: "+money(totals().total));
+$("b-add").onclick=()=>{
+  const m=S.meds.find(x=>x.id===$("b-med").value),q=parseInt($("b-qty").value,10);$("b-err").textContent="";
+  if(!m||!(q>0))return;
+  const have=cart.filter(c=>c.id===m.id).reduce((a,c)=>a+c.qty,0);
+  if(have+q>m.qty){$("b-err").textContent="Sirf "+m.qty+" stock hai.";return}
+  const ex=cart.find(c=>c.id===m.id);if(ex)ex.qty+=q;else cart.push({id:m.id,name:m.name,batch:m.batch,qty:q,price:m.price});
+  bill()};
+$("b-gen").onclick=()=>{
+  if(!cart.length){$("b-err").textContent="Pehle dawai add karo.";return}
+  const t=totals();
+  cart.forEach(c=>{S.meds.find(m=>m.id===c.id).qty-=c.qty});
+  const b={id:uid(),date:new Date().toISOString(),cust:$("b-cust").value.trim(),items:cart,disc:t.d,gst:t.g,sub:t.sub,total:t.total};
+  S.bills.push(b);save();cart=[];$("b-cust").value="";showReceipt(b);bill()};
+function showReceipt(b){
+  const h='<div style="font-family:monospace;padding:12px"><h2 style="text-align:center;margin:0">'+esc(S.shop)+"</h2><p style='text-align:center;margin:2px'>"+b.date.slice(0,16).replace("T"," ")+"</p><p>Customer: "+esc(b.cust||"Walk-in")+"</p><hr>"
+  +b.items.map(c=>"<div style='display:flex;justify-content:space-between'><span>"+esc(c.name)+" ("+esc(c.batch)+") x"+c.qty+"</span><span>"+money(c.qty*c.price)+"</span></div>").join("")
+  +"<hr><div style='display:flex;justify-content:space-between'><span>Subtotal</span><span>"+money(b.sub)+"</span></div>"
+  +"<div style='display:flex;justify-content:space-between'><span>Discount "+b.disc+"%, GST "+b.gst+"%</span></div>"
+  +"<h3 style='display:flex;justify-content:space-between;margin:6px 0'><span>Total</span><span>"+money(b.total)+"</span></h3></div>";
+  $("receipt").innerHTML=h;
+  $("rcpt-view").innerHTML='<div class="card">'+h+'<div class="act"><button class="p" id="pr">Print</button><button class="s" id="cl">Band</button></div></div>';
+  $("pr").onclick=()=>window.print();$("cl").onclick=()=>$("rcpt-view").innerHTML=""}
+
+function alerts(){
+  const ex=S.meds.filter(m=>status(m)==="expired"),so=S.meds.filter(m=>status(m)==="soon").sort((a,b)=>a.exp.localeCompare(b.exp)),lo=S.meds.filter(m=>m.qty<=LOW&&status(m)!=="expired");
+  const sec=(t,c,L,f)=>'<h2 class="'+c+'">'+t+" ("+L.length+")</h2>"+(L.length?L.map(m=>'<div class="card row"><span><b>'+esc(m.name)+'</b><br><span class="mu">Batch '+esc(m.batch)+"</span></span><span class=\""+c+'">'+f(m)+"</span></div>").join(""):'<p class="mu">Kuch nahi.</p>');
+  $("alerts").innerHTML=sec("Expired","expired",ex,m=>m.exp+" · "+m.qty+" bacha")+sec("90 din mein expire","soon",so,m=>days(m.exp)+" din · "+m.qty+" bacha")+sec("Kam stock (10 ya kam)","low",lo,m=>m.qty+" bacha")}
+
+$("s-shop").oninput=()=>{S.shop=$("s-shop").value;save();$("ttl").textContent=S.shop||"Pharmacy Manager"};
+$("ex").onclick=()=>{$("bk").value=JSON.stringify(S);$("bk").select();$("bk-msg").textContent="Ab text copy kar lo."};
+$("im").onclick=()=>{try{const d=JSON.parse($("bk").value);if(!Array.isArray(d.meds))throw 0;S=Object.assign({meds:[],bills:[],shop:"Medical Store"},d);save();$("bk-msg").textContent="Import ho gaya.";render()}catch(e){$("bk-msg").textContent="Backup text sahi nahi hai."}};
+render();
+</script></body></html>
